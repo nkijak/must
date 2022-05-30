@@ -1,0 +1,12 @@
+ident = { (ASCII_ALPHA | ASCII_DIGIT)+ }
+
+dep = { " " ~ ident }
+target = { !ASCII_DIGIT ~ ident ~ ":" ~ dep* }
+
+step = { "    " ~ ident ~ (" " ~ ident)+ }
+steps = { (step ~ " "? ~ "\\"? ~ NEWLINE)+ }
+
+task = { target ~ NEWLINE ~ steps }
+
+
+must = { (task ~ NEWLINE)+ }
