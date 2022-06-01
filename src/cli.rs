@@ -7,5 +7,5 @@ pub struct Args {
     #[clap(short,long)]
     pub targets: bool,
 
-    pub command: String
+    pub command: Option<String>
 }

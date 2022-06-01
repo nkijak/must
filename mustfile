@@ -1,0 +1,4 @@
+first_target: dep1 dep2
+    step
+
+

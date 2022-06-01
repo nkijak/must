@@ -1,12 +1,10 @@
-ident = { (ASCII_ALPHA | ASCII_DIGIT)+ }
-
-dep = { " " ~ ident }
-target = { !ASCII_DIGIT ~ ident ~ ":" ~ dep* }
-
-step = { "    " ~ ident ~ (" " ~ ident)+ }
+wildcard = { "%" }
+vardef = { "{" ~ ASCII_ALPHA+ ~ "}" }
+ident = { (ASCII_ALPHA | ASCII_DIGIT | "/" | "_" | "-")+ }
+usevar = { "${" ~ ASCII_ALPHA+ ~ "}" | "$@" }
+dep = { " " ~ (ident | usevar)+ }
+target = { !ASCII_DIGIT ~ (ident | wildcard | vardef)+ ~ ":" ~ dep* }
+step = { "    " ~ ident ~ (" " ~ ident)* }
 steps = { (step ~ " "? ~ "\\"? ~ NEWLINE)+ }
-
 task = { target ~ NEWLINE ~ steps }
-
-
 must = { (task ~ NEWLINE)+ }
