@@ -2,3 +2,4 @@ first_target: dep1 dep2
     step
 
 
+second_target: first_target

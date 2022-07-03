@@ -1,0 +1,3 @@
+target: dep1
+    echo hello world
+

@@ -1,0 +1,8 @@
+target1: dep1
+    step one
+    step two
+
+target2: dep2
+    step one
+
+
