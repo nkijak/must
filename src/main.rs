@@ -54,14 +54,14 @@ mod tests {
 
     #[test]
     fn parses_multiple_targets() {
-        let testfile = fs::read_to_string("tests/fixtures/single.must").expect("couldnt find test file");
+        let testfile = fs::read_to_string("tests/fixtures/multiple.must").expect("couldnt find test file");
         let mut file = Pestfile::parse(Rule::must, &testfile)
             .expect("unscuessful parse");
 
         let task = file.next().unwrap();
         assert_eq!(task.as_rule(), Rule::task);
-        println!("{}", task.as_str());
         assert_eq!(file.next().expect("task not found").as_rule(), Rule::task);
-        assert!(file.next().is_none())
+        assert_eq!(file.next().unwrap().as_rule(), Rule::EOI);
+        assert!(file.next().is_none());
     }
 }
