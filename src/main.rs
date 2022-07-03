@@ -17,33 +17,51 @@ pub struct Pestfile;
 
 fn main() {
     let args = cli::Args::parse();
-    //let args = cli::Args{targets:false, command:String::new()};
     if let Some(cmd) = args.command {
         println!("running {}", cmd);
     }
 
     let unparsedfile = fs::read_to_string("mustfile").expect("couldnt read mustfile");
-    let file = Pestfile::parse(Rule::must, &unparsedfile)
-        .expect("unsucessful parse")
-        .next().unwrap();
+    let mustfile = Pestfile::parse(Rule::must, &unparsedfile)
+        .expect("unsucessful parse");
 
     if args.targets {
-        for task in file.into_inner() {
-            match task.as_rule() {
+        for entry in mustfile {
+            match entry.as_rule() {
                 Rule::task => {
-                    for target in task.into_inner() {
-                        match target.as_rule() {
-                            Rule::target => {
-                                println!("{}", target.as_str())
-                            }
-                            _ => println!("") 
-                        }
-                    }
+                    println!("{}", entry.into_inner().next().unwrap().as_str());
                 }
-                _ => println!("")
+                _ => ()
             }
         }
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
 
+    #[test]
+    fn parses_single_target() {
+        let testfile = fs::read_to_string("tests/fixtures/single.must").expect("couldnt find test file");
+        let mut file = Pestfile::parse(Rule::must, &testfile)
+            .expect("unscuessful parse");
+
+        let task = file.next().unwrap();
+        assert_eq!(task.as_rule(), Rule::task);
+        assert_eq!(file.next().expect("premature end").as_rule(), Rule::EOI)
+    }
+
+    #[test]
+    fn parses_multiple_targets() {
+        let testfile = fs::read_to_string("tests/fixtures/multiple.must").expect("couldnt find test file");
+        let mut file = Pestfile::parse(Rule::must, &testfile)
+            .expect("unscuessful parse");
+
+        let task = file.next().unwrap();
+        assert_eq!(task.as_rule(), Rule::task);
+        assert_eq!(file.next().expect("task not found").as_rule(), Rule::task);
+        assert_eq!(file.next().unwrap().as_rule(), Rule::EOI);
+        assert!(file.next().is_none());
+    }
+}
