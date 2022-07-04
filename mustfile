@@ -7,3 +7,6 @@ second_target: first_target
 third_target:
 	echo hello world
 	ls -l
+
+list_builds:
+	gh run list --workflow rust.yml

@@ -3,5 +3,5 @@ task = { target ~ ":" ~ dependent* ~ ("\n" ~ steps)? }
 steps = _{ step ~ (NEWLINE ~ step)* }
 step = _{ ("\t" | " ")+ ~ action }
 dependent = { " " ~ target }
-action = { (ASCII_ALPHANUMERIC | "'" | "\"" | "-" | " ")+ }
+action = { (ASCII_ALPHANUMERIC | "'" | "\"" | "-" | " " | ".")+ }
 target = { (ASCII_ALPHANUMERIC | "/" | "_" | "-")+ }
