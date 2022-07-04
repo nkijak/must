@@ -1,7 +1,7 @@
 must = _{ SOI ~ "\n"* ~ (task ~ "\n"+)* ~ task? ~ EOI }
 task = { target ~ ":" ~ dependent* ~ ("\n" ~ steps)? }
 steps = _{ step ~ (NEWLINE ~ step)* }
-step = { "  " ~ action }
+step = _{ ("\t" | " ")+ ~ action }
 dependent = { " " ~ target }
 action = { (ASCII_ALPHANUMERIC | "'" | "\"" | "-" | " ")+ }
 target = { (ASCII_ALPHANUMERIC | "/" | "_" | "-")+ }
