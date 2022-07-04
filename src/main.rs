@@ -23,6 +23,7 @@ struct Task {
 }
 
 // TODO how to tell it to use the variant `task`?
+// TODO this needs to return the Success/Fail thing
 fn execute_task(task: Task) {
     unimplemented!("{}", task.target)
 }
@@ -42,9 +43,6 @@ fn build_task(taskentries: Pairs<Rule>) -> Task {
 
 fn main() {
     let args = cli::Args::parse();
-    if let Some(cmd) = args.command {
-        println!("running {}", cmd);
-    }
 
     let unparsedfile = fs::read_to_string("mustfile").expect("couldnt read mustfile");
     let mustfile = Pestfile::parse(Rule::must, &unparsedfile)
@@ -60,7 +58,7 @@ fn main() {
             }
         }
     } else {
-        let tasks = mustfile.map_while (|entry| -> Option<Task> {
+        let mut tasks = mustfile.map_while (|entry| -> Option<Task> {
             match entry.as_rule() {
                 Rule::task => {
                     let task = entry.into_inner();
@@ -70,6 +68,17 @@ fn main() {
                 _ => unreachable!()
             }
         });
+
+        let task = match &args.command {
+            Some(command) => tasks.find(|t| &t.target == command),
+            None => tasks.next()
+        };
+        if task.is_some() {
+            execute_task(task.unwrap())
+        } else {
+            // TODO need to return error code 2 here
+            println!("must: *** No rule to make target `{}'. Stop", args.command.as_ref().unwrap())
+        }
     }
 }
 
