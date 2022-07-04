@@ -1,4 +1,5 @@
-
+use std::process::Command;
+use std::io::{self, Write};
 use clap::Parser as ClapParser;
 extern crate pest;
 #[macro_use]
@@ -23,9 +24,19 @@ struct Task {
 }
 
 // TODO how to tell it to use the variant `task`?
-// TODO this needs to return the Success/Fail thing
+// TODO this needs to return the Result type
 fn execute_task(task: Task) {
-    unimplemented!("{}", task.target)
+    for step in task.steps {
+        println!("{}", step);
+        let result = Command::new("sh")
+            .arg("-c")
+            .arg(step)
+            .output()
+            .expect("Could not execute");
+        io::stdout().write_all(&result.stdout).unwrap();
+        io::stderr().write_all(&result.stderr).unwrap();
+        assert!(result.status.success());
+    }
 }
 
 fn build_task(taskentries: Pairs<Rule>) -> Task {
