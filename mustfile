@@ -1,5 +1,12 @@
 first_target: dep1 dep2
-    step
+	step
 
 
 second_target: first_target
+
+third_target:
+	echo hello world
+	ls -l
+
+list_builds:
+	gh run list --workflow rust.yml
