@@ -7,6 +7,7 @@ extern crate pest_derive;
 use pest::Parser;
 use pest::iterators::Pairs;
 use std::fs;
+use std::path;
 
 mod cli;
 
@@ -55,7 +56,16 @@ fn build_task(taskentries: Pairs<Rule>) -> Task {
 fn main() {
     let args = cli::Args::parse();
 
-    let unparsedfile = fs::read_to_string("mustfile").expect("couldnt read mustfile");
+    let filename: String = (if path::Path::new("mustfile").exists() {
+        "mustfile"
+    } else if path::Path::new("Makefile").exists() {
+        "Makefile"
+    } else if path::Path::new("makefile").exists() {
+        "makefile"
+    } else {
+        panic!("no mustfile, Makefile, or makefile"); 
+    }).into();
+    let unparsedfile = fs::read_to_string(filename).expect("couldnt read");
     let mustfile = Pestfile::parse(Rule::must, &unparsedfile)
         .expect("unsucessful parse");
 
