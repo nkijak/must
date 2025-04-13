@@ -1,0 +1,8 @@
+dep1:
+    echo "Running dep1"
+
+dep2: dep1
+    echo "Running dep2"
+
+main: dep1 dep2
+    echo "Running main"

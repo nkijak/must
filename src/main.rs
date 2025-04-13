@@ -16,7 +16,7 @@ mod cli;
 #[grammar = "mustfile.pest"]
 pub struct Pestfile;
 
-#[derive(Debug,Default)]
+#[derive(Debug,Default,Clone)]
 struct Task {
     target: String,
     _deps: Vec<String>,
@@ -24,9 +24,18 @@ struct Task {
     steps: Vec<String>
 }
 
-// TODO how to tell it to use the variant `task`?
-// TODO this needs to return the Result type
-fn execute_task(task: Task) -> Result<(), String> {
+fn execute_task(task: Task, all_tasks: &Vec<Task>) -> Result<(), String> {
+    // First execute all dependencies
+    for dep_name in &task._deps {
+        let dep_task = all_tasks.iter()
+            .find(|t| &t.target == dep_name)
+            .ok_or_else(|| format!("Dependency '{}' not found", dep_name))?;
+
+        println!("Executing dependency: {}", dep_name);
+        execute_task(dep_task.clone(), all_tasks)?;
+    }
+
+    // Then execute the main task steps
     for step in task.steps {
         println!("{}", step);
         let result = Command::new("sh")
@@ -46,10 +55,6 @@ fn execute_task(task: Task) -> Result<(), String> {
         }
     }
     Ok(())
-}
-
-fn sum_values(x: i16, y: i16) -> i32 {
-    (x as i32) + (y as i32)
 }
 
 fn build_task(taskentries: Pairs<Rule>) -> Task {
@@ -97,7 +102,7 @@ fn main() {
             }
         }
     } else {
-        let mut tasks = mustfile.map_while (|entry| -> Option<Task> {
+        let tasks: Vec<Task> = mustfile.map_while(|entry| -> Option<Task> {
             match entry.as_rule() {
                 Rule::task => {
                     let task = entry.into_inner();
@@ -106,14 +111,15 @@ fn main() {
                 Rule::EOI => None,
                 _ => unreachable!()
             }
-        });
+        }).collect();
 
         let task = match &args.command {
-            Some(command) => tasks.find(|t| &t.target == command),
-            None => tasks.next()
+            Some(command) => tasks.iter().find(|t| &t.target == command),
+            None => tasks.first()
         };
+
         if let Some(task) = task {
-            if let Err(e) = execute_task(task) {
+            if let Err(e) = execute_task(task.clone(), &tasks) {
                 eprintln!("Error: {}", e);
                 std::process::exit(1);
             }
@@ -176,9 +182,31 @@ mod tests {
 
         let task = file.next().unwrap();
         let task = build_task(task.into_inner());
-        let result = execute_task(task);
+        let result = execute_task(task, &vec![]);
         assert!(result.is_err());
         let error = result.unwrap_err();
         assert!(error.contains("Command failed with exit code: 1"));
+    }
+
+    #[test]
+    fn executes_dependencies_in_order() {
+        let testfile = fs::read_to_string("tests/fixtures/dependencies.must").expect("couldnt find test file");
+        let mut file = Pestfile::parse(Rule::must, &testfile)
+            .expect("unsuccessful parse");
+
+        let tasks: Vec<Task> = file.map_while(|entry| -> Option<Task> {
+            match entry.as_rule() {
+                Rule::task => {
+                    let task = entry.into_inner();
+                    Some(build_task(task))
+                },
+                Rule::EOI => None,
+                _ => unreachable!()
+            }
+        }).collect();
+
+        let main_task = tasks.iter().find(|t| t.target == "main").unwrap();
+        let result = execute_task(main_task.clone(), &tasks);
+        assert!(result.is_ok());
     }
 }
