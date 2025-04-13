@@ -1,7 +1,8 @@
-must = _{ SOI ~ "\n"* ~ (task ~ "\n"+)* ~ task? ~ EOI }
-task = { target ~ ":" ~ dependent* ~ ("\n" ~ steps)? }
+must = _{ SOI ~ "\n"* ~ (comment ~ "\n"+)* ~ (task ~ "\n"+ ~ (comment ~ "\n"+)*)* ~ task? ~ EOI }
+task = { target ~ ":" ~ dependent* ~ comment? ~ ("\n" ~ steps)? }
 steps = _{ step ~ (NEWLINE ~ step)* }
-step = _{ ("\t" | " ")+ ~ action }
-dependent = { " " ~ target }
-action = { (ASCII_ALPHANUMERIC | "'" | "\"" | "-" | " " | ".")+ }
+step = _{ ("\t" | " ")+ ~ action ~ comment? }
+dependent = { " " ~ target ~ comment? }
+action = { (!("#" | NEWLINE) ~ ANY)+ }
 target = { (ASCII_ALPHANUMERIC | "/" | "_" | "-")+ }
+comment = _{ " "? ~ "#" ~ (!NEWLINE ~ ANY)* }
