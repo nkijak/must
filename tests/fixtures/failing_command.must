@@ -1,0 +1,3 @@
+test_fail:
+    false
+    echo "This should not run"
