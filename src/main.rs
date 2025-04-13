@@ -26,18 +26,30 @@ struct Task {
 
 // TODO how to tell it to use the variant `task`?
 // TODO this needs to return the Result type
-fn execute_task(task: Task) {
+fn execute_task(task: Task) -> Result<(), String> {
     for step in task.steps {
         println!("{}", step);
         let result = Command::new("sh")
             .arg("-c")
             .arg(step)
             .output()
-            .expect("Could not execute");
+            .map_err(|e| format!("Failed to execute command: {}", e))?;
+
         io::stdout().write_all(&result.stdout).unwrap();
         io::stderr().write_all(&result.stderr).unwrap();
-        assert!(result.status.success());
+
+        if !result.status.success() {
+            return Err(format!(
+                "Command failed with exit code: {}",
+                result.status.code().unwrap_or(-1)
+            ));
+        }
     }
+    Ok(())
+}
+
+fn sum_values(x: i16, y: i16) -> i32 {
+    (x as i32) + (y as i32)
 }
 
 fn build_task(taskentries: Pairs<Rule>) -> Task {
@@ -53,8 +65,14 @@ fn build_task(taskentries: Pairs<Rule>) -> Task {
     task
 }
 
+/// .
+///
+/// # Panics
+///
+/// Panics if .
 fn main() {
     let args = cli::Args::parse();
+
 
     let filename: String = (if path::Path::new("mustfile").exists() {
         "mustfile"
@@ -63,7 +81,7 @@ fn main() {
     } else if path::Path::new("makefile").exists() {
         "makefile"
     } else {
-        panic!("no mustfile, Makefile, or makefile"); 
+        panic!("no mustfile, Makefile, or makefile");
     }).into();
     let unparsedfile = fs::read_to_string(filename).expect("couldnt read");
     let mustfile = Pestfile::parse(Rule::must, &unparsedfile)
@@ -94,11 +112,14 @@ fn main() {
             Some(command) => tasks.find(|t| &t.target == command),
             None => tasks.next()
         };
-        if task.is_some() {
-            execute_task(task.unwrap())
+        if let Some(task) = task {
+            if let Err(e) = execute_task(task) {
+                eprintln!("Error: {}", e);
+                std::process::exit(1);
+            }
         } else {
-            // TODO need to return error code 2 here
-            println!("must: *** No rule to make target `{}'. Stop", args.command.as_ref().unwrap())
+            println!("must: *** No rule to make target `{}'. Stop", args.command.as_ref().unwrap());
+            std::process::exit(2);
         }
     }
 }
@@ -145,5 +166,19 @@ mod tests {
         assert_eq!(actual.target, String::from("target1"));
         assert_eq!(actual._deps, vec![String::from("dep1")]);
         assert_eq!(actual.steps, vec![String::from("step one"), String::from("step two")]);
+    }
+
+    #[test]
+    fn failing_command_returns_error() {
+        let testfile = fs::read_to_string("tests/fixtures/failing_command.must").expect("couldnt find test file");
+        let mut file = Pestfile::parse(Rule::must, &testfile)
+            .expect("unsuccessful parse");
+
+        let task = file.next().unwrap();
+        let task = build_task(task.into_inner());
+        let result = execute_task(task);
+        assert!(result.is_err());
+        let error = result.unwrap_err();
+        assert!(error.contains("Command failed with exit code: 1"));
     }
 }
