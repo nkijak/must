@@ -1,0 +1,10 @@
+# This is a top-level comment
+
+target1: dep1 # This is a dependency comment
+    echo "hello world" # This is a step comment
+    echo hello world # Another step comment
+
+# Another top-level comment
+target2: # Comment after colon
+    echo "test" # Comment with quotes
+    echo test # Comment without quotes

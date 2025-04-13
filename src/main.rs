@@ -63,7 +63,7 @@ fn build_task(taskentries: Pairs<Rule>) -> Task {
         match entry.as_rule() {
             Rule::target    => task.target=entry.as_str().into(),
             Rule::dependent => task._deps.push(entry.into_inner().next().unwrap().as_str().into()),
-            Rule::action    => task.steps.push(entry.as_str().into()),
+            Rule::action    => task.steps.push(entry.as_str().trim().into()),
             _ => unreachable!()
         }
     }
@@ -208,5 +208,31 @@ mod tests {
         let main_task = tasks.iter().find(|t| t.target == "main").unwrap();
         let result = execute_task(main_task.clone(), &tasks);
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn parses_comments() {
+        let testfile = fs::read_to_string("tests/fixtures/comments.must").expect("couldnt find test file");
+        let mut file = Pestfile::parse(Rule::must, &testfile)
+            .expect("unsuccessful parse");
+
+        let tasks: Vec<Task> = file.map_while(|entry| -> Option<Task> {
+            match entry.as_rule() {
+                Rule::task => {
+                    let task = entry.into_inner();
+                    Some(build_task(task))
+                },
+                Rule::EOI => None,
+                _ => unreachable!()
+            }
+        }).collect();
+
+        assert_eq!(tasks.len(), 2);
+        assert_eq!(tasks[0].target, "target1");
+        assert_eq!(tasks[0]._deps, vec!["dep1".to_string()]);
+        assert_eq!(tasks[0].steps, vec!["echo \"hello world\"".to_string(), "echo hello world".to_string()]);
+        assert_eq!(tasks[1].target, "target2");
+        assert_eq!(tasks[1]._deps, Vec::<String>::new());
+        assert_eq!(tasks[1].steps, vec!["echo \"test\"".to_string(), "echo test".to_string()]);
     }
 }
