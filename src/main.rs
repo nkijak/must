@@ -235,4 +235,18 @@ mod tests {
         assert_eq!(tasks[1]._deps, Vec::<String>::new());
         assert_eq!(tasks[1].steps, vec!["echo \"test\"".to_string(), "echo test".to_string()]);
     }
+
+    #[test]
+    fn parses_multiline_action() {
+        let testfile = fs::read_to_string("tests/fixtures/multiline.must").expect("couldnt find test file");
+        let file = Pestfile::parse(Rule::must, &testfile)
+            .expect("unsuccessful parse");
+
+        let mut file = file;
+        let task = file.next().unwrap();
+        let task = build_task(task.into_inner());
+        assert_eq!(task.steps.len(), 1);
+        assert!(task.steps[0].contains("echo \\"));
+        assert!(task.steps[0].contains("\"hello world\""));
+    }
 }
